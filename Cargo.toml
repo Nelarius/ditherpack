@@ -1,0 +1,7 @@
+[workspace]
+
+members= [
+    "ditherpack",
+    "cli",
+]
+resolver = "2"
