@@ -101,7 +101,7 @@ fn dithered_rgb_image(
     DitheredImage { dimensions, bits }
 }
 
-#[derive(clap::ArgEnum, Clone, Copy)]
+#[derive(clap::ArgEnum, Clone, Copy, Debug)]
 pub enum DitherType {
     Bayer,
     BlueNoise,
