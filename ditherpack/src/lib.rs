@@ -5,7 +5,7 @@
     nonstandard_style
 )]
 
-use bytemuck::{bytes_of, cast_slice};
+use bitvec::prelude::*;
 use image::GenericImageView;
 use itertools::Itertools;
 
@@ -73,9 +73,10 @@ impl ThresholdMatrix {
     }
 }
 
+#[derive(serde::Serialize)]
 struct DitheredImage {
     dimensions: (u32, u32),
-    bits: bitvec::vec::BitVec,
+    bits: BitVec<u64, Lsb0>,
 }
 
 fn dithered_rgb_image(
@@ -83,7 +84,7 @@ fn dithered_rgb_image(
     img: &image::DynamicImage,
 ) -> DitheredImage {
     let dimensions: (u32, u32) = img.dimensions();
-    let mut bits =
+    let mut bits: BitVec<u64, Lsb0> =
         bitvec::vec::BitVec::with_capacity((dimensions.0 as usize) * (dimensions.1 as usize));
     let img_luma = img.as_luma8().unwrap();
 
@@ -129,18 +130,22 @@ pub fn pack<W: std::io::Write>(
     };
     let dithered_img = dithered_rgb_image(&threshold_matrix, image);
 
-    writer.write(bytes_of(&dithered_img.dimensions.0))?;
-    writer.write(bytes_of(&dithered_img.dimensions.1))?;
-    // writer.write(cast_slice(dithered_img.bits[..]))?;
+    bincode::serialize_into(writer, &dithered_img).unwrap();
 
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    use bitvec::prelude::*;
+
     #[test]
-    fn it_works() {
-        let result = 2 + 2;
-        assert_eq!(result, 4);
+    fn into_vec_length() {
+        let mut bits: BitVec<u32, Lsb0> = BitVec::with_capacity(128);
+        bits.push(true);
+        bits.push(false);
+
+        let bytes = bits.into_vec();
+        assert_eq!(1, bytes.len())
     }
 }
