@@ -1,20 +1,20 @@
+use clap::Parser;
 use ditherpack::{pack, DitherType};
-use structopt::StructOpt;
 
 use std::path::PathBuf;
 
-#[derive(StructOpt)]
+#[derive(Parser)]
 struct CliOpts {
-    #[structopt(short, parse(from_os_str))]
+    #[clap(short, parse(from_os_str))]
     input_image: PathBuf,
-    #[structopt(short)]
+    #[clap(short, arg_enum)]
     method: DitherType,
 }
 
 fn main() {
     // TODO: there is a lot of unwrap here
 
-    let opts = CliOpts::from_args();
+    let opts = CliOpts::parse();
     let output_file = opts.input_image.with_extension("ditherpack");
 
     let user_img = image::open(opts.input_image).unwrap();

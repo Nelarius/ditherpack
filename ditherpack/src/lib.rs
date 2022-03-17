@@ -102,21 +102,10 @@ fn dithered_rgb_image(
     DitheredImage { dimensions, bits }
 }
 
+#[derive(clap::ArgEnum, Clone, Copy)]
 pub enum DitherType {
     Bayer,
     BlueNoise,
-}
-
-impl std::str::FromStr for DitherType {
-    type Err = &'static str;
-
-    fn from_str(input: &str) -> Result<DitherType, Self::Err> {
-        match input {
-            "bayer" => Ok(DitherType::Bayer),
-            "blue" => Ok(DitherType::BlueNoise),
-            _ => Err("Could not parse DitherType"),
-        }
-    }
 }
 
 pub fn pack<W: std::io::Write>(
