@@ -50,7 +50,7 @@ impl ThresholdMatrix {
             std::io::Cursor::new(include_bytes!("128x128_blue.png")),
             image::ImageFormat::Png,
         )
-        .unwrap()
+        .expect("Failed to load embedded 128x128_blue.png")
         .grayscale();
 
         let dimensions = texture.dimensions();
@@ -65,9 +65,7 @@ impl ThresholdMatrix {
     fn look_up(&self, x: u32, y: u32) -> u8 {
         let j = x % self.dimensions.0;
         let i = y % self.dimensions.1;
-        let idx: usize = (i * self.dimensions.0 + j)
-            .try_into()
-            .expect("i * row-length + j does not fit into usize");
+        let idx = (i * self.dimensions.0 + j) as usize;
 
         self.matrix[idx]
     }
@@ -80,8 +78,8 @@ struct DitheredImage {
 }
 
 fn dithered_rgb_image(
-    threshold_matrix: &ThresholdMatrix,
-    img_luma: &image::ImageBuffer<image::Luma<u8>, Vec<u8>>,
+    threshold_matrix: ThresholdMatrix,
+    img_luma: image::GrayImage,
 ) -> DitheredImage {
     let dimensions: (u32, u32) = img_luma.dimensions();
     let mut bits: BitVec<u64, Lsb0> =
@@ -107,19 +105,25 @@ pub enum DitherType {
     BlueNoise,
 }
 
+#[derive(thiserror::Error, Debug)]
+pub enum PackError {
+    #[error(transparent)]
+    Serialization(#[from] bincode::Error),
+}
+
 pub fn pack<W: std::io::Write>(
     image: &image::DynamicImage,
     method: DitherType,
     writer: &mut W,
-) -> std::io::Result<()> {
+) -> Result<(), PackError> {
     let threshold_matrix = match method {
         DitherType::Bayer => ThresholdMatrix::bayer_matrix(3),
         DitherType::BlueNoise => ThresholdMatrix::blue_noise(),
     };
-    let img_luma = image.as_luma8().unwrap();
-    let dithered_img = dithered_rgb_image(&threshold_matrix, img_luma);
+    let img_luma = image.to_luma8();
+    let dithered_img = dithered_rgb_image(threshold_matrix, img_luma);
 
-    bincode::serialize_into(writer, &dithered_img).unwrap();
+    bincode::serialize_into(writer, &dithered_img)?;
 
     Ok(())
 }

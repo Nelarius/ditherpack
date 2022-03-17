@@ -12,3 +12,4 @@ image = "0.24.1"
 itertools = "0.10.3"
 serde = { version = "1.0.136", features = ["derive"] }
 clap = { version = "3.1.6", features = ["derive"] }
+thiserror = "1.0.30"
