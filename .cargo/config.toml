@@ -1,0 +1,3 @@
+
+[env]
+RUSTC_FORCE_INCREMENTAL = "1"
