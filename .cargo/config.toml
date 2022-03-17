@@ -1,3 +1,6 @@
 
 [env]
 RUSTC_FORCE_INCREMENTAL = "1"
+
+[alias]
+cli-blue = "run --release -- -i cli/light-hires.jpg -m blue"
