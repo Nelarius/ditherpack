@@ -81,12 +81,11 @@ struct DitheredImage {
 
 fn dithered_rgb_image(
     threshold_matrix: &ThresholdMatrix,
-    img: &image::DynamicImage,
+    img_luma: &image::ImageBuffer<image::Luma<u8>, Vec<u8>>,
 ) -> DitheredImage {
-    let dimensions: (u32, u32) = img.dimensions();
+    let dimensions: (u32, u32) = img_luma.dimensions();
     let mut bits: BitVec<u64, Lsb0> =
         bitvec::vec::BitVec::with_capacity((dimensions.0 as usize) * (dimensions.1 as usize));
-    let img_luma = img.as_luma8().unwrap();
 
     for (x, y) in (0..dimensions.0).cartesian_product(0..dimensions.1) {
         let luma = img_luma.get_pixel(x, y)[0];
@@ -117,7 +116,8 @@ pub fn pack<W: std::io::Write>(
         DitherType::Bayer => ThresholdMatrix::bayer_matrix(3),
         DitherType::BlueNoise => ThresholdMatrix::blue_noise(),
     };
-    let dithered_img = dithered_rgb_image(&threshold_matrix, image);
+    let img_luma = image.as_luma8().unwrap();
+    let dithered_img = dithered_rgb_image(&threshold_matrix, img_luma);
 
     bincode::serialize_into(writer, &dithered_img).unwrap();
 
