@@ -84,7 +84,7 @@ impl ThresholdMatrix {
     }
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 struct DitheredImage {
     dimensions: (u32, u32),
     bits: BitVec<u64, Lsb0>,
@@ -119,8 +119,13 @@ pub enum DitherType {
     WhiteNoise,
 }
 
+pub struct RgbImage {
+    pub dimensions: (u32, u32),
+    pub pixels: Vec<u32>,
+}
+
 #[derive(thiserror::Error, Debug)]
-pub enum PackError {
+pub enum DitherpackError {
     #[error(transparent)]
     Serialization(#[from] bincode::Error),
 }
@@ -129,7 +134,7 @@ pub fn pack<W: std::io::Write>(
     image: &image::DynamicImage,
     method: DitherType,
     writer: &mut W,
-) -> Result<(), PackError> {
+) -> Result<(), DitherpackError> {
     let threshold_matrix = match method {
         DitherType::Bayer => ThresholdMatrix::bayer_matrix(3),
         DitherType::BlueNoise => ThresholdMatrix::blue_noise(),
@@ -141,6 +146,21 @@ pub fn pack<W: std::io::Write>(
     bincode::serialize_into(writer, &dithered_img)?;
 
     Ok(())
+}
+
+pub fn unpack<R: std::io::Read>(reader: R) -> Result<RgbImage, DitherpackError> {
+    let dithered_img: DitheredImage = bincode::deserialize_from(reader)?;
+
+    let mut pixels: Vec<u32> = Vec::new();
+    for b in dithered_img.bits.into_iter() {
+        let px = if b { 0xffffffff } else { 0xff000000 };
+        pixels.push(px);
+    }
+
+    Ok(RgbImage {
+        dimensions: dithered_img.dimensions,
+        pixels,
+    })
 }
 
 #[cfg(test)]
