@@ -8,6 +8,7 @@
 use bitvec::prelude::*;
 use image::GenericImageView;
 use itertools::Itertools;
+use rand::prelude::*;
 
 pub use bitvec;
 pub use image;
@@ -62,6 +63,18 @@ impl ThresholdMatrix {
         Self { dimensions, matrix }
     }
 
+    fn white_noise((xdim, ydim): (u32, u32)) -> Self {
+        let mut matrix = Vec::new();
+        for _ in 0..(xdim * ydim) {
+            matrix.push(rand::thread_rng().gen::<u8>());
+        }
+
+        Self {
+            dimensions: (xdim, ydim),
+            matrix,
+        }
+    }
+
     fn look_up(&self, x: u32, y: u32) -> u8 {
         let j = x % self.dimensions.0;
         let i = y % self.dimensions.1;
@@ -103,6 +116,7 @@ fn dithered_rgb_image(
 pub enum DitherType {
     Bayer,
     BlueNoise,
+    WhiteNoise,
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -119,6 +133,7 @@ pub fn pack<W: std::io::Write>(
     let threshold_matrix = match method {
         DitherType::Bayer => ThresholdMatrix::bayer_matrix(3),
         DitherType::BlueNoise => ThresholdMatrix::blue_noise(),
+        DitherType::WhiteNoise => ThresholdMatrix::white_noise(image.dimensions()),
     };
     let img_luma = image.to_luma8();
     let dithered_img = dithered_rgb_image(threshold_matrix, img_luma);
