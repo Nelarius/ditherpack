@@ -3,6 +3,7 @@
 members= [
     "ditherpack",
     "cli",
+    "inspector",
 ]
 resolver = "2"
 

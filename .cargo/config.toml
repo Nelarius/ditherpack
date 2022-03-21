@@ -4,3 +4,4 @@ RUSTC_FORCE_INCREMENTAL = "1"
 
 [alias]
 cli-blue = "run --release --bin cli -- -i cli/light-hires.jpg -m blue-noise"
+inspector = "run --release --bin inspector -- -i cli/light-hires.ditherpack"
