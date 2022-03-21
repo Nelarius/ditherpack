@@ -128,6 +128,8 @@ pub struct RgbImage {
 pub enum DitherpackError {
     #[error(transparent)]
     Serialization(#[from] bincode::Error),
+    #[error(transparent)]
+    Compression(#[from] std::io::Error),
 }
 
 pub fn pack<W: std::io::Write>(
@@ -140,10 +142,14 @@ pub fn pack<W: std::io::Write>(
         DitherType::BlueNoise => ThresholdMatrix::blue_noise(),
         DitherType::WhiteNoise => ThresholdMatrix::white_noise(image.dimensions()),
     };
+
     let img_luma = image.to_luma8();
     let dithered_img = dithered_rgb_image(threshold_matrix, img_luma);
 
-    bincode::serialize_into(writer, &dithered_img)?;
+    let bytes = bincode::serialize(&dithered_img)?;
+    // zstd supports compression levels 1 to 22.
+    // Levels >= 20 require huge amounts of memory and should be used with caution.
+    zstd::stream::copy_encode(std::io::Cursor::new(bytes), writer, 19)?;
 
     Ok(())
 }
